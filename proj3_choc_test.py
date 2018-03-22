@@ -109,7 +109,7 @@ class TestCountrySearch(unittest.TestCase):
         self.assertEqual(results[1][0],'Uganda')
 
         results = process_command('countries sellers bars_sold top=5')
-        self.assertEqual(results[0][1],713)
+        self.assertEqual(results[0][2],713)
         self.assertEqual(results[1][0], 'France')
 
 
