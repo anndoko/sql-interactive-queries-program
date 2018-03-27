@@ -130,34 +130,33 @@ def read_json_file_and_insert_data(FILENAME):
         cur.execute(insert_statement, [Alpha2, Alpha3, EnglishName, Region, Subregion, Population, Area])
         conn.commit()
 
+def update_tables():
+    try:
+        conn = sqlite3.connect(DBNAME)
+        cur = conn.cursor()
+    except:
+        print("Failure. Please try again.")
+
+    # set CompanyLocationId &
+    update_CompanyLocationId = '''
+        UPDATE Bars
+        SET (CompanyLocationId) = (SELECT c.ID FROM Countries c WHERE Bars.CompanyLocation = c.EnglishName)
+    '''
+
+    update_BroadBeanOriginId = '''
+        UPDATE Bars
+        SET (BroadBeanOriginId) = (SELECT c.ID FROM Countries c WHERE Bars.BroadBeanOrigin = c.EnglishName)
+    '''
+
+    # execute and commit
+    cur.execute(update_CompanyLocationId)
+    cur.execute(update_BroadBeanOriginId)
+    conn.commit()
+
 init_db_tables()
 read_csv_file_and_insert_data(BARSCSV)
 read_json_file_and_insert_data(COUNTRIESJSON)
-
-
-
-try:
-    conn = sqlite3.connect(DBNAME)
-    cur = conn.cursor()
-except:
-    print("Failure. Please try again.")
-
-update_CompanyLocationId = '''
-    UPDATE Bars
-    SET (CompanyLocationId) = (SELECT c.ID FROM Countries c WHERE Bars.CompanyLocation = c.EnglishName)
-'''
-
-update_BroadBeanOriginId = '''
-    UPDATE Bars
-    SET (BroadBeanOriginId) = (SELECT c.ID FROM Countries c WHERE Bars.BroadBeanOrigin = c.EnglishName)
-'''
-
-cur.execute(update_CompanyLocationId)
-cur.execute(update_BroadBeanOriginId)
-
-conn.commit()
-
-
+update_tables()
 
 # Part 2: Implement logic to process user commands
 def process_command(command):
