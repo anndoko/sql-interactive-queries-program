@@ -93,14 +93,14 @@ class TestCompanySearch(unittest.TestCase):
 
     def test_company_search(self):
         results = process_command('companies region=Europe ratings top=5')
-        self.assertEqual(results[1][0], 'Amedei')
+        self.assertEqual(results[1][0], 'Idilio (Felchlin)')
 
         results = process_command('companies country=US bars_sold top=5')
         self.assertTrue(results[0][0] == 'Fresco' and results[0][2] == 26)
 
         results = process_command('companies cocoa top=5')
-        self.assertEqual(results[0][0], 'C-Amaro')
-        self.assertGreater(results[0][2], 0.78)
+        self.assertEqual(results[0][0], 'Videri')
+        self.assertGreater(results[0][2], 0.79)
 
 class TestCountrySearch(unittest.TestCase):
 
@@ -109,7 +109,7 @@ class TestCountrySearch(unittest.TestCase):
         self.assertEqual(results[1][0],'Uganda')
 
         results = process_command('countries sellers bars_sold top=5')
-        self.assertEqual(results[0][2],713)
+        self.assertEqual(results[0][2], 764)
         self.assertEqual(results[1][0], 'France')
 
 

@@ -42,7 +42,7 @@ def init_db_tables():
             'CocoaPercent' ,
             'CompanyLocation' TEXT,
             'CompanyLocationId' INTEGER,
-            'Rating' ,
+            'Rating' REAL,
             'BeanType' TEXT,
             'BroadBeanOrigin' TEXT,
             'BroadBeanOriginId' INTEGER
@@ -116,7 +116,7 @@ def read_json_file_and_insert_data(FILENAME):
     for row in json_data:
         Alpha2 = row["alpha2Code"]
         Alpha3 = row["alpha3Code"]
-        EnglishName = row["translations"]["es"]
+        EnglishName = row["name"]
         Region = row["region"]
         Subregion = row["subregion"]
         Population = row["population"]
@@ -130,13 +130,32 @@ def read_json_file_and_insert_data(FILENAME):
         cur.execute(insert_statement, [Alpha2, Alpha3, EnglishName, Region, Subregion, Population, Area])
         conn.commit()
 
-
-
 init_db_tables()
 read_csv_file_and_insert_data(BARSCSV)
 read_json_file_and_insert_data(COUNTRIESJSON)
 
 
+
+try:
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+except:
+    print("Failure. Please try again.")
+
+update_CompanyLocationId = '''
+    UPDATE Bars
+    SET (CompanyLocationId) = (SELECT c.ID FROM Countries c WHERE Bars.CompanyLocation = c.EnglishName)
+'''
+
+update_BroadBeanOriginId = '''
+    UPDATE Bars
+    SET (BroadBeanOriginId) = (SELECT c.ID FROM Countries c WHERE Bars.BroadBeanOrigin = c.EnglishName)
+'''
+
+cur.execute(update_CompanyLocationId)
+cur.execute(update_BroadBeanOriginId)
+
+conn.commit()
 
 
 
