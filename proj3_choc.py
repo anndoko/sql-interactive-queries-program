@@ -12,66 +12,99 @@ DBNAME = 'choc.db'
 BARSCSV = 'flavors_of_cacao_cleaned.csv'
 COUNTRIESJSON = 'countries.json'
 
-# Create db
-conn = sqlite3.connect(DBNAME)
-cur = conn.cursor()
+def init_db_tables():
+    # Create db
+    try:
+        conn = sqlite3.connect(DBNAME)
+        cur = conn.cursor()
+    except:
+        print("Failure. Please try again.")
 
-# Drop tables if they exist
-statement = '''
-    DROP TABLE IF EXISTS 'Bars';
-'''
-cur.execute(statement)
-statement = '''
-    DROP TABLE IF EXISTS 'Countries';
-'''
-cur.execute(statement)
-conn.commit()
-
-# -- Create tables: Bars --
-statement = '''
-    CREATE TABLE 'Bars' (
-        'Id' INTEGER PRIMARY KEY AUTOINCREMENT,
-        'Company' TEXT NOT NULL,
-        'SpecificBeanBarName' TEXT NOT NULL,
-        'REF' TEXT,
-        'ReviewDate' TEXT,
-        'CocoaPercent' ,
-        'CompanyLocation' TEXT,
-        'CompanyLocationId' INTEGER,
-        'Rating' ,
-        'BeanType' TEXT,
-        'BroadBeanOrigin' TEXT,
-        'BroadBeanOriginId' INTEGER
-    );
-'''
-try:
+    # Drop tables if they exist
+    statement = '''
+        DROP TABLE IF EXISTS 'Bars';
+    '''
     cur.execute(statement)
-    print("Execute the statement to create the table: Bars")
-except:
-    print("Failure.")
-conn.commit()
-
-# -- Create tables: Countries --
-statement = '''
-    CREATE TABLE 'Countries' (
-        'Id' INTEGER PRIMARY KEY AUTOINCREMENT,
-        'Alpha2' TEXT,
-        'Alpha3' TEXT,
-        'EnglishName' TEXT,
-        'Region' TEXT,
-        'Subregion' TEXT,
-        'Population' INTEGER,
-        'Area' REAL
-    );
-'''
-try:
+    statement = '''
+        DROP TABLE IF EXISTS 'Countries';
+    '''
     cur.execute(statement)
-    print("Execute the statement to create the table: Countries")
-except:
-    print("Failure.")
-conn.commit()
+    conn.commit()
 
+    # -- Create tables: Bars --
+    statement = '''
+        CREATE TABLE 'Bars' (
+            'Id' INTEGER PRIMARY KEY AUTOINCREMENT,
+            'Company' TEXT NOT NULL,
+            'SpecificBeanBarName' TEXT NOT NULL,
+            'REF' TEXT,
+            'ReviewDate' TEXT,
+            'CocoaPercent' ,
+            'CompanyLocation' TEXT,
+            'CompanyLocationId' INTEGER,
+            'Rating' ,
+            'BeanType' TEXT,
+            'BroadBeanOrigin' TEXT,
+            'BroadBeanOriginId' INTEGER
+        );
+    '''
+    try:
+        cur.execute(statement)
+        print("Execute the statement to create the table: Bars")
+    except:
+        print("Failure. Please try again.")
+    conn.commit()
 
+    # -- Create tables: Countries --
+    statement = '''
+        CREATE TABLE 'Countries' (
+            'Id' INTEGER PRIMARY KEY AUTOINCREMENT,
+            'Alpha2' TEXT,
+            'Alpha3' TEXT,
+            'EnglishName' TEXT,
+            'Region' TEXT,
+            'Subregion' TEXT,
+            'Population' INTEGER,
+            'Area' REAL
+        );
+    '''
+    try:
+        cur.execute(statement)
+        print("Execute the statement to create the table: Countries")
+    except:
+        print("Failure. Please try again.")
+    conn.commit()
+
+def read_csv_file_and_insert_data(FILENAME):
+    # read data from CSV
+    csv_f = open(FILENAME)
+    csv_data = csv.reader(csv_f)
+    for row in csv_data:
+        (Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin) = row
+
+        try:
+            conn = sqlite3.connect(DBNAME)
+            cur = conn.cursor()
+        except:
+            print("Failure. Please try again.")
+
+        insert_statement = '''
+            INSERT INTO Bars(Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        '''
+
+        # execute and commit
+        cur.execute(insert_statement, [Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin])
+        conn.commit()
+
+init_db_tables()
+read_csv_file_and_insert_data(BARSCSV)
+
+#
+# read data from JSON
+json_f = open(COUNTRIESJSON, 'r')
+json_f_content = json_f.read()
+json_data = json.loads(json_f_content)
+print(json_data)
 
 # Part 2: Implement logic to process user commands
 def process_command(command):
