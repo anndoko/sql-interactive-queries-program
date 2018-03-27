@@ -39,7 +39,7 @@ def init_db_tables():
             'SpecificBeanBarName' TEXT NOT NULL,
             'REF' TEXT,
             'ReviewDate' TEXT,
-            'CocoaPercent' ,
+            'CocoaPercent' REAL,
             'CompanyLocation' TEXT,
             'CompanyLocationId' INTEGER,
             'Rating' REAL,
@@ -86,6 +86,8 @@ def read_csv_file_and_insert_data(FILENAME):
 
         for row in csv_data:
             (Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin) = row
+
+            CocoaPercent = float(CocoaPercent.strip('%'))
 
             try:
                 conn = sqlite3.connect(DBNAME)
@@ -167,7 +169,86 @@ def load_help_text():
     with open('help.txt') as f:
         return f.read()
 
+
 # Part 3: Implement interactive prompt. We've started for you!
+
+# functions for the interactive part
+# --- bars ---
+# bars
+# 	Description: Lists chocolate bars, according the specified parameters.
+#
+# 	Options:
+# 		* sellcountry=<name>|sourcecountry=<name>|
+# 			sellregion=<name>|sourceregion=<geo_name> [default: none]
+# 		Description: Specifies a country or region within which to limit the
+# 		results, and also specifies whether to limit by the seller
+# 		(or manufacturer) or by the bean origin source.
+#
+# 		* ratings|cocoa [default: ratings]
+# 		Description: Specifies whether to sort by rating or cocoa percentage
+#
+# 		* top=<limit>|bottom=<limit> [default: top=10]
+# 		Description: Specifies whether to list the top <limit> matches or the
+# 		bottom <limit> matches.
+
+
+# cocoa
+def bars_cocoa_percent(type="top", limit=10):
+    # connect db
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+
+    # form the statement
+    statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin "
+    statement += "FROM Bars "
+
+    # top: DESC / bottom ASC
+    if type == "top":
+        statement += "ORDER BY CocoaPercent {} ".format("DESC")
+    elif type == "bottom":
+        statement += "ORDER BY CocoaPercent {} ".format("ASC")
+
+    # limit
+    statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
+
+    # excute the statement
+    rows = cur.execute(statement)
+    for row in rows:
+        print(row)
+    conn.commit()
+
+
+# rating
+def bars_ratings(type="top", limit=10):
+    # connect db
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+
+    # form the statement
+    statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin "
+    statement += "FROM Bars "
+
+    # top: DESC / bottom ASC
+    if type == "top":
+        statement += "ORDER BY Rating {} ".format("DESC")
+    elif type == "bottom":
+        statement += "ORDER BY Rating {} ".format("ASC")
+
+    # limit
+    statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
+
+    # excute the statement
+    rows = cur.execute(statement)
+    for row in rows:
+        print(row)
+    conn.commit()
+
+# --- companies ---
+
+# --- countries ---
+
+# --- regions ---
+
 def interactive_prompt():
     help_text = load_help_text()
     response = ''
@@ -177,6 +258,9 @@ def interactive_prompt():
         if response == 'help':
             print(help_text)
             continue
+
+
+
 
 # Make sure nothing runs or prints out when this file is run as a module
 # if __name__=="__main__":
