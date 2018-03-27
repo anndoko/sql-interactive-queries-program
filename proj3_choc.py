@@ -77,34 +77,68 @@ def init_db_tables():
 
 def read_csv_file_and_insert_data(FILENAME):
     # read data from CSV
-    csv_f = open(FILENAME)
-    csv_data = csv.reader(csv_f)
-    for row in csv_data:
-        (Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin) = row
+    with open(FILENAME, 'r') as csv_f:
+        csv_data = csv.reader(csv_f)
 
-        try:
-            conn = sqlite3.connect(DBNAME)
-            cur = conn.cursor()
-        except:
-            print("Failure. Please try again.")
+        # This skips the first row of the CSV file.
+        # csvreader.next() also works in Python 2.
+        next(csv_data)
+
+        for row in csv_data:
+            (Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin) = row
+
+            try:
+                conn = sqlite3.connect(DBNAME)
+                cur = conn.cursor()
+            except:
+                print("Failure. Please try again.")
+
+            insert_statement = '''
+                INSERT INTO Bars(Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            '''
+
+            # execute and commit
+            cur.execute(insert_statement, [Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin])
+            conn.commit()
+
+def read_json_file_and_insert_data(FILENAME):
+    # read data from JSON
+    json_f = open(FILENAME, 'r')
+    json_f_content = json_f.read()
+    json_data = json.loads(json_f_content)
+
+    try:
+        conn = sqlite3.connect(DBNAME)
+        cur = conn.cursor()
+    except:
+        print("Failure. Please try again.")
+
+    for row in json_data:
+        Alpha2 = row["alpha2Code"]
+        Alpha3 = row["alpha3Code"]
+        EnglishName = row["translations"]["es"]
+        Region = row["region"]
+        Subregion = row["subregion"]
+        Population = row["population"]
+        Area = row["area"]
 
         insert_statement = '''
-            INSERT INTO Bars(Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO Countries(Alpha2, Alpha3, EnglishName, Region, Subregion, Population, Area) VALUES (?, ?, ?, ?, ?, ?, ?);
         '''
 
         # execute and commit
-        cur.execute(insert_statement, [Company, SpecificBeanBarName, REF, ReviewDate, CocoaPercent, CompanyLocation, Rating, BeanType, BroadBeanOrigin])
+        cur.execute(insert_statement, [Alpha2, Alpha3, EnglishName, Region, Subregion, Population, Area])
         conn.commit()
+
+
 
 init_db_tables()
 read_csv_file_and_insert_data(BARSCSV)
+read_json_file_and_insert_data(COUNTRIESJSON)
 
-#
-# read data from JSON
-json_f = open(COUNTRIESJSON, 'r')
-json_f_content = json_f.read()
-json_data = json.loads(json_f_content)
-print(json_data)
+
+
+
 
 # Part 2: Implement logic to process user commands
 def process_command(command):
