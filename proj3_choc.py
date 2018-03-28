@@ -174,14 +174,7 @@ def load_help_text():
 
 # functions for the interactive part
 # --- bars ---
-# 	Options:
-# 		* sellcountry=<name>|sourcecountry=<name>|
-# 			sellregion=<name>|sourceregion=<geo_name> [default: none]
-# 		Description: Specifies a country or region within which to limit the
-# 		results, and also specifies whether to limit by the seller
-# 		(or manufacturer) or by the bean origin source.
-
-def bars_query(specification="", keyword="", criteria="ratings", type="top", limit=10):
+def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -218,12 +211,83 @@ def bars_query(specification="", keyword="", criteria="ratings", type="top", lim
         print(row)
     conn.commit()
 
-bars_ratings(specification="Company", keyword="Luker", criteria="ratings", type="top", limit=10)
 # --- companies ---
+# Description: Lists chocolate bars sellers according to the specified parameters.
+# Only companies that sell at least 4 different kinds of bars
+# are listed in results.
+#
+# Options:
+# 	* country=<name>|region=<name> [default: none]
+# 	Description: Specifies a country or region within which to limit the
+# 	results.
+#
+# 	* ratings|cocoa|bars_sold [default: ratings]
+# 	Description: Specifies whether to sort by rating, cocoa percentage, or
+# 	the number of different types of bars sold
+#
+# 	* top=<limit>|bottom=<limit> [default: top=10]
+# 	Description: Specifies whether to list the top <limit> matches or the
+# 	bottom <limit> matches.
+
+
+
+# # connect db
+# conn = sqlite3.connect(DBNAME)
+# cur = conn.cursor()
+#
+# # form the statement
+# statement = '''
+#     SELECT Company, CompanyLocation, AVG(Rating), AVG(CocoaPercent), COUNT(SpecificBeanBarName)
+#     FROM Bars
+#     GROUP BY Company
+# '''
+#
+# # excute the statement
+# rows = cur.execute(statement)
+# for row in rows:
+#     print(row)
+# conn.commit()
 
 # --- countries ---
+# Description: Lists countries according to specified parameters.
+# Only countries that sell/source at least 4 different kinds of bars
+# are listed in results.
+#
+# Options:
+# 	* region=<name> [default: none]
+# 	Description: Specifies a region within which to limit the
+# 	results.
+#
+# 	* sellers|sources [default: sellers]
+# 	Description: Specifies whether to select countries based sellers or bean
+# 	sources.
+#
+# 	* ratings|cocoa|bars_sold [default: ratings]
+# 	Description: Specifies whether to sort by rating, cocoa percentage, or
+# 	the number of different types of bars sold
+#
+# 	* top=<limit>|bottom=<limit> [default: top=10]
+# 	Description: Specifies whether to list the top <limit> matches or the
+# 	bottom <limit> matches.
 
 # --- regions ---
+# Description: Lists regions according to specified parameters.
+# Only regions that sell/source at least 4 different kinds of bars are
+# listed in results.
+#
+# Options:
+# 	* sellers|sources [default: sellers]
+# 	Description: Specifies whether to select countries based sellers or bean
+# 	sources.
+#
+# 	* ratings|cocoa|bars_sold [default: ratings]
+# 	Description: Specifies whether to sort by rating, cocoa percentage, or
+# 	the number of different types of bars sold
+#
+# 	* top=<limit>|bottom=<limit> [default: top=10]
+# 	Description: Specifies whether to list the top <limit> matches or the
+# 	bottom <limit> matches.
+
 
 
 def interactive_prompt():
@@ -236,6 +300,62 @@ def interactive_prompt():
             print(help_text)
             continue
 
+        command_lst = response.lower().split()
+
+        # def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
+        command_dic = {
+            "specification": "",
+            "keyword": "",
+            "criteria": "ratings",
+            "sorting_order": "top",
+            "limit": 0
+        }
+
+        # lists for checing the commend
+        query_type_lst = ["bars", "companies", "countries", "regions"]
+        sorting_criteria_lst = ["cocoa", "ratings", "bars_sold"]
+        sorting_order_lst = ["top", "bottom"]
+        specification_lst = ["sellcountry", "sourcecountry", "sellregion", "country", "region"]
+
+        # check user's command line
+        for command in command_lst:
+            # query type
+            if command in query_type_lst:
+                command_dic["query_type"] = command
+            # sorting criteria
+            elif command in sorting_criteria_lst:
+                command_dic["criteria"] = command
+            # number of matches & specifications
+            elif "=" in command:
+                lst = command.split("=")
+                for ele in lst:
+                    # top/bottom & limit
+                    if ele in sorting_order_lst:
+                        command_dic["sorting_order"] = lst[0]
+                        command_dic["limit"] = lst[1]
+                    # specifications
+                    elif ele in specification_lst:
+                        if lst[0] == "sellcountry":
+                            command_dic["specification"] = "CompanyLocation"
+                        elif lst[0] == "sourcecountry":
+                            command_dic["specification"] = "BroadBeanOrigin"
+                        elif lst[0] == "sellregion":
+                            command_dic["specification"] = "Region"
+                        else:
+                            command_dic["specification"] = lst[0].title()
+                        command_dic["keyword"] = lst[1]
+            else:
+                continue
+
+        # execute bars_query
+        try:
+            if command_dic["query_type"] == "bars":
+                bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+        except:
+            continue
+
+
+
 # Make sure nothing runs or prints out when this file is run as a module
-# if __name__=="__main__":
-#     interactive_prompt()
+if __name__=="__main__":
+    interactive_prompt()
