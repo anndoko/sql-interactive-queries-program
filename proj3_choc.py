@@ -162,11 +162,11 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
 
     # form the statement
     if "c1" in specification:
-        statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin, c1.Alpha2 "
+        statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin "
         statement += "FROM Bars "
         statement += "JOIN Countries AS c1 ON Bars.CompanyLocationId = c1.Id "
     elif "c2" in specification:
-        statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin, c2.Alpha2 "
+        statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin "
         statement += "FROM Bars "
         statement += "JOIN Countries AS c2 ON Bars.BroadBeanOriginId = c2.Id "
     else:
@@ -338,7 +338,7 @@ def countries_query(specification="", keyword="", criteria="ratings", sorting_or
     return results
 
 # --- regions ---
-def regions_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
+def regions_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10", sellers_or_sources="seller"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -356,10 +356,11 @@ def regions_query(specification="", keyword="", criteria="ratings", sorting_orde
     statement += "FROM Countries "
 
     # form the statement
-    if specification == "CompanyLocation" or specification == "":
+    if sellers_or_sources == "sellers" or specification == "":
         statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
-    elif specification == "BroadBeanOrigin":
+    elif sellers_or_sources == "sources":
         statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
+
 
     statement += "GROUP BY Region "
     statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
@@ -398,8 +399,12 @@ def str_output(string_output):
         formatted_output = string_output
     return formatted_output
 
-def percent_output(percent_float):
-    formatted_output = str(percent_float).replace(".0", "%")
+def percent_output(cocoa_float):
+    formatted_output = str(cocoa_float).replace(".0", "%")
+    return formatted_output
+
+def digits_output(rating_float):
+    formatted_output = "{0:.1f}".format(rating_float, 1)
     return formatted_output
 
 # Implement logic to process user commands
@@ -422,6 +427,9 @@ def process_command(command):
     sorting_criteria_lst = ["cocoa", "ratings", "bars_sold"]
     sorting_order_lst = ["top", "bottom"]
     specification_lst = ["sellcountry", "sourcecountry", "sellregion", "sourceregion", "country", "region", "sellers", "sources"]
+    sellers_or_sources_lst = ["sellers", "sources"]
+
+    if_valid = True
 
     # check user's command line
     for command in command_lst:
@@ -454,15 +462,12 @@ def process_command(command):
                     else:
                         command_dic["specification"] = lst[0].title()
                     command_dic["keyword"] = lst[1].title()
-        elif command == "sellers":
-            command_dic["sellers_or_sources"] = "CompanyLocation"
-        elif command == "sources":
-            command_dic["sellers_or_sources"] = "BroadBeanOrigin"
+        elif command in sellers_or_sources_lst:
+            command_dic["sellers_or_sources"] = command
 
-    print(command_dic)
     results = []
 
-    if command_dic["query_type"] == "bars":
+    if command_dic["query_type"] == "bars" and if_valid == True:
         # execute bars_query
         results = bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
@@ -471,9 +476,9 @@ def process_command(command):
         template = "{0:20} {1:20} {2:20} {3:20} {4:20} {5:20}"
         for row in results:
             (sbbn, c, cl, r, cp, bbo) = row
-            print(template.format(str_output(sbbn), str_output(c), str_output(cl), r, percent_output(cp), str_output(bbo)))
+            print(template.format(str_output(sbbn), str_output(c), str_output(cl), digits_output(r), percent_output(cp), str_output(bbo)))
 
-    elif command_dic["query_type"] == "companies":
+    elif command_dic["query_type"] == "companies" and if_valid == True:
         # execute companies_query
         results = companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
@@ -482,9 +487,15 @@ def process_command(command):
         template = "{0:20} {1:20} {2:20}"
         for row in results:
             (c, cl, agg) = row
+
+            if command_dic["criteria"] == "ratings":
+                agg = digits_output(agg)
+            elif command_dic["criteria"] == "cocoa":
+                agg = percent_output(agg)
+
             print(template.format(str_output(c), str_output(cl), agg))
 
-    elif command_dic["query_type"] == "countries":
+    elif command_dic["query_type"] == "countries" and if_valid == True:
         # execute countries_query
         results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"], command_dic["sellers_or_sources"])
 
@@ -493,9 +504,15 @@ def process_command(command):
         template = "{0:20} {1:20} {2:20}"
         for row in results:
             (c, r, agg) = row
+
+            if command_dic["criteria"] == "ratings":
+                agg = digits_output(agg)
+            elif command_dic["criteria"] == "cocoa":
+                agg = percent_output(agg)
+
             print(template.format(str_output(c), str_output(r), agg))
 
-    elif command_dic["query_type"] == "regions":
+    elif command_dic["query_type"] == "regions" and if_valid == True:
         # execute regions_query
         results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
@@ -504,6 +521,12 @@ def process_command(command):
         template = "{0:15} {1:15}"
         for row in results:
             (r, agg) = row
+
+            if command_dic["criteria"] == "ratings":
+                agg = digits_output(agg)
+            elif command_dic["criteria"] == "cocoa":
+                agg = percent_output(agg)
+
             print(template.format(str_output(r), agg))
 
 def load_help_text():
