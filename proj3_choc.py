@@ -390,6 +390,18 @@ def regions_query(specification="", keyword="", criteria="ratings", sorting_orde
 
     return results
 
+# functions for formatting the output
+def str_output(string_output):
+    if len(string_output) > 12:
+        formatted_output = string_output[:12] + "..."
+    else:
+        formatted_output = string_output
+    return formatted_output
+
+def percent_output(percent_float):
+    formatted_output = str(percent_float).replace(".0", "%")
+    return formatted_output
+
 # Implement logic to process user commands
 def process_command(command):
 
@@ -450,7 +462,7 @@ def process_command(command):
         elif command == "sources":
             command_dic["specification"] = "BroadBeanOrigin"
 
-    print(command_dic)
+    # print(command_dic)
     results = []
 
     if command_dic["query_type"] == "bars":
@@ -458,15 +470,18 @@ def process_command(command):
         results = bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
         # output
-        template = "{0:25} {1:20} {2:25} {3:8} {4:8} {5:30}"
+        # 'SpecificBeanBarName','Company', 'CompanyLocation', 'Rating', 'CocoaPercent', 'BroadBeanOrigin'
+        template = "{0:20} {1:20} {2:20} {3:20} {4:20} {5:20}"
         for row in results:
-            print(template.format(*row))
+            (sbbn, c, cl, r, cp, bbo) = row
+            print(template.format(str_output(sbbn), str_output(c), str_output(cl), r, percent_output(cp), str_output(bbo)))
 
     elif command_dic["query_type"] == "companies":
         # execute companies_query
         results = companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
         # output
+        # 'Company', 'CompanyLocation', <agg> (i.e., average rating or cocoa percent, or number of bars sold)
         template = "{0:25} {1:25} {2:25}"
         for row in results:
             print(template.format(*row))
@@ -476,6 +491,7 @@ def process_command(command):
         results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
         # output
+        # 'Country', 'Region', <agg> (i.e., average rating or cocoa percent, or number of bars sold)
         template = "{0:25} {1:25} {2:25}"
         for row in results:
             print(template.format(*row))
@@ -485,6 +501,7 @@ def process_command(command):
         results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
         # output
+        # 'Region', <agg> (i.e., average rating or cocoa percent, or number of bars sold)
         template = "{0:25} {1:25}"
         for row in results:
             print(template.format(*row))
