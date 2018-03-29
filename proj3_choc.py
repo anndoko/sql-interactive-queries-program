@@ -7,7 +7,7 @@ import json
 # and meet the project requirements! You will need to implement several new
 # functions.
 
-# Part 1: Read data from CSV and JSON into a new database called choc.db
+# Read data from CSV and JSON into a new database called choc.db
 DBNAME = 'choc.db'
 BARSCSV = 'flavors_of_cacao_cleaned.csv'
 COUNTRIESJSON = 'countries.json'
@@ -50,7 +50,6 @@ def init_db_tables():
     '''
     try:
         cur.execute(statement)
-        print("Execute the statement to create the table: Bars")
     except:
         print("Failure. Please try again.")
     conn.commit()
@@ -70,7 +69,6 @@ def init_db_tables():
     '''
     try:
         cur.execute(statement)
-        print("Execute the statement to create the table: Countries")
     except:
         print("Failure. Please try again.")
     conn.commit()
@@ -155,9 +153,7 @@ def update_tables():
     cur.execute(update_BroadBeanOriginId)
     conn.commit()
 
-
-# Part 3: Implement interactive prompt. We've started for you!
-# functions for the interactive part
+# Queries
 # --- bars ---
 def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     # connect db
@@ -279,29 +275,40 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     return results
 
 # --- countries ---
-def countries_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit="10"):
+def countries_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
+    statement = "SELECT EnglishName, Region, "
+
     # form the statement
     if criteria == "ratings":
-        statement = "SELECT EnglishName, Region, AVG(Rating) "
+        statement += "AVG(Rating) "
     elif criteria == "cocoa":
-        statement = "SELECT EnglishName, Region, AVG(CocoaPercent) "
+        statement += "AVG(CocoaPercent) "
     elif criteria == "bars_sold":
-        statement = "SELECT EnglishName, Region, COUNT(SpecificBeanBarName) "
+        statement += "COUNT(SpecificBeanBarName) "
 
     statement += "FROM Countries "
 
     # form the statement
-    if specification == "CompanyLocation":
+    if specification == "CompanyLocation" or specification == "":
         statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
     elif specification == "BroadBeanOrigin":
         statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
 
     statement += "GROUP BY EnglishName "
     statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
+
+    # specifications
+    if specification != "":
+        if "Region" in specification:
+            keyword = keyword.title()
+        try:
+            statement += "AND {} = '{}' ".format(specification , keyword)
+        except:
+            print("Failure. Please try again.")
 
     # ratings / cocoa
     if criteria == "ratings":
@@ -319,8 +326,8 @@ def countries_query(specification="CompanyLocation", keyword="", criteria="ratin
 
     # limit
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
-    print("statement:", statement)
 
+    print(statement)
     # excute the statement
     results = []
     rows = cur.execute(statement).fetchall()
@@ -331,24 +338,25 @@ def countries_query(specification="CompanyLocation", keyword="", criteria="ratin
     return results
 
 # --- regions ---
-def regions_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit="10"):
-    print("test")
+def regions_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
     # form the statement
+    statement = "SELECT Region, "
+
     if criteria == "ratings":
-        statement = "SELECT Region, AVG(Rating) "
+        statement += "AVG(Rating) "
     elif criteria == "cocoa":
-        statement = "SELECT Region, AVG(CocoaPercent) "
+        statement += "AVG(CocoaPercent) "
     elif criteria == "bars_sold":
-        statement = "SELECT Region, COUNT(SpecificBeanBarName) "
+        statement += "COUNT(SpecificBeanBarName) "
 
     statement += "FROM Countries "
 
     # form the statement
-    if specification == "CompanyLocation":
+    if specification == "CompanyLocation" or specification == "":
         statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
     elif specification == "BroadBeanOrigin":
         statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
@@ -370,6 +378,9 @@ def regions_query(specification="CompanyLocation", keyword="", criteria="ratings
     elif sorting_order == "bottom":
         statement += "{} ".format("ASC")
 
+    # limit
+    statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
+
     # excute the statement
     results = []
     rows = cur.execute(statement).fetchall()
@@ -379,18 +390,18 @@ def regions_query(specification="CompanyLocation", keyword="", criteria="ratings
 
     return results
 
-# Part 2: Implement logic to process user commands
+# Implement logic to process user commands
 def process_command(command):
 
     command_lst = command.lower().split()
 
     # def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     command_dic = {
-        "specification": "",
-        "keyword": "",
-        "criteria": "ratings",
-        "sorting_order": "top",
-        "limit": "10"
+        "specification":"",
+        "keyword":"",
+        "criteria":"ratings",
+        "sorting_order":"top",
+        "limit":"10"
     }
 
     # lists for checing the commend
@@ -439,18 +450,44 @@ def process_command(command):
         elif command == "sources":
             command_dic["specification"] = "BroadBeanOrigin"
 
-    # execute bars_query
+    print(command_dic)
     results = []
 
     if command_dic["query_type"] == "bars":
+        # execute bars_query
         results = bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+
+        # output
+        template = "{0:25} {1:20} {2:25} {3:8} {4:8} {5:30}"
+        for row in results:
+            print(template.format(*row))
+
     elif command_dic["query_type"] == "companies":
+        # execute companies_query
         results = companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+
+        # output
+        template = "{0:25} {1:25} {2:25}"
+        for row in results:
+            print(template.format(*row))
+
     elif command_dic["query_type"] == "countries":
+        # execute countries_query
         results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+
+        # output
+        template = "{0:25} {1:25} {2:25}"
+        for row in results:
+            print(template.format(*row))
+
     elif command_dic["query_type"] == "regions":
+        # execute regions_query
         results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
-    return results
+
+        # output
+        template = "{0:25} {1:25}"
+        for row in results:
+            print(template.format(*row))
 
 def load_help_text():
     with open('help.txt') as f:
@@ -464,7 +501,6 @@ def interactive_prompt():
 
         try:
             results = process_command(response)
-            print(results)
         except:
             continue
 
