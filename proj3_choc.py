@@ -159,7 +159,7 @@ def update_tables():
 # Part 3: Implement interactive prompt. We've started for you!
 # functions for the interactive part
 # --- bars ---
-def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
+def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -200,7 +200,6 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
 
     # limit
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
-    print(statement)
 
     # excute the statement
     results = []
@@ -212,7 +211,7 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
     return results
 
 # --- companies ---
-def companies_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
+def companies_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -269,7 +268,6 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
 
     # limit
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
-    print(statement)
 
     # excute the statement
     results = []
@@ -281,7 +279,7 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     return results
 
 # --- countries ---
-def countries_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit=10):
+def countries_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -333,7 +331,7 @@ def countries_query(specification="CompanyLocation", keyword="", criteria="ratin
     return results
 
 # --- regions ---
-def regions_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit=10):
+def regions_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     print("test")
     # connect db
     conn = sqlite3.connect(DBNAME)
@@ -373,7 +371,6 @@ def regions_query(specification="CompanyLocation", keyword="", criteria="ratings
         statement += "{} ".format("ASC")
 
     # excute the statement
-    print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -387,13 +384,13 @@ def process_command(command):
 
     command_lst = command.lower().split()
 
-    # def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
+    # def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
     command_dic = {
         "specification": "",
         "keyword": "",
         "criteria": "ratings",
         "sorting_order": "top",
-        "limit": 0
+        "limit": "10"
     }
 
     # lists for checing the commend
@@ -453,7 +450,6 @@ def process_command(command):
         results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
     elif command_dic["query_type"] == "regions":
         results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
-
     return results
 
 def load_help_text():
@@ -465,6 +461,12 @@ def interactive_prompt():
     response = ''
     while response != 'exit':
         response = input('Enter a command: ')
+
+        try:
+            results = process_command(response)
+            print(results)
+        except:
+            continue
 
         if response == 'help':
             print(help_text)
