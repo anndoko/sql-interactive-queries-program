@@ -222,9 +222,9 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
 
     # ratings / cocoa
     if criteria == "ratings":
-        statement = "SELECT Company, CompanyLocation, AVG(Rating), c1.Alpha2 "
+        statement = "SELECT Company, CompanyLocation, AVG(Rating) "
     elif criteria == "cocoa":
-        statement = "SELECT Company, CompanyLocation, AVG(CocoaPercent), COUNT(SpecificBeanBarName), c2.Alpha2 "
+        statement = "SELECT Company, CompanyLocation, AVG(CocoaPercent), COUNT(SpecificBeanBarName) "
     elif criteria == "bars_sold":
         statement = "SELECT Company, CompanyLocation, COUNT(SpecificBeanBarName)"
 
@@ -234,18 +234,18 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     if "c1.Alpha2" in specification:
         statement += "JOIN Countries AS c1 ON Bars.CompanyLocationId = c1.Id "
         statement += "GROUP BY Company "
-        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+        statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
     elif "c2.Alpha2" in specification:
         statement += "JOIN Countries AS c2 ON Bars.BroadBeanOriginId = c2.Id "
         statement += "GROUP BY Company "
-        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
-    elif specification == "Alpha2":
+        statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
+    elif specification == "Alpha2" or specification == "Region":
         statement += "JOIN Countries ON Bars.CompanyLocation = Countries.EnglishName "
         statement += "GROUP BY Company "
-        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+        statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
     else:
         statement += "GROUP BY Company "
-        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+        statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
 
 
 
@@ -422,9 +422,9 @@ def process_command(command):
 
 
 
-# 88
-result_88 = process_command('bars sourceregion=Africa ratings top=5')
-print("result 88:", result_88)
+# 95
+result_95 = process_command('companies cocoa top=5')
+print("result 95:", result_95[0][0])
 
 
 def load_help_text():
