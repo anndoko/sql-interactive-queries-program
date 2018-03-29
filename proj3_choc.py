@@ -155,18 +155,8 @@ def update_tables():
     cur.execute(update_BroadBeanOriginId)
     conn.commit()
 
-# Part 2: Implement logic to process user commands
-def process_command(command):
-    return []
-
-
-def load_help_text():
-    with open('help.txt') as f:
-        return f.read()
-
 
 # Part 3: Implement interactive prompt. We've started for you!
-
 # functions for the interactive part
 # --- bars ---
 def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
@@ -174,12 +164,24 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
+
     # form the statement
-    statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin "
-    statement += "FROM Bars "
+    if "c1" in specification:
+        statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin, c1.Alpha2 "
+        statement += "FROM Bars "
+        statement += "JOIN Countries AS c1 ON Bars.CompanyLocationId = c1.Id "
+    elif "c2" in specification:
+        statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin, c2.Alpha2 "
+        statement += "FROM Bars "
+        statement += "JOIN Countries AS c2 ON Bars.BroadBeanOriginId = c2.Id "
+    else:
+        statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin "
+        statement += "FROM Bars "
 
     # specifications
     if specification != "":
+        if "Alpha2" in specification:
+            keyword = keyword.upper()
         try:
             statement += "WHERE {} = '{}' ".format(specification , keyword)
         except:
@@ -202,13 +204,93 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
     print(statement)
 
     # excute the statement
-    results = cur.execute(statement).fetchall()
+    results = []
+    rows = cur.execute(statement).fetchall()
+    for row in rows:
+        results.append(row)
     conn.commit()
 
     return results
 
 # --- companies ---
 def companies_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
+    # connect db
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+
+    # form the statement
+
+    # ratings / cocoa
+    if criteria == "ratings":
+        statement = "SELECT Company, CompanyLocation, AVG(Rating), c1.Alpha2 "
+    elif criteria == "cocoa":
+        statement = "SELECT Company, CompanyLocation, AVG(CocoaPercent), COUNT(SpecificBeanBarName), c2.Alpha2 "
+    elif criteria == "bars_sold":
+        statement = "SELECT Company, CompanyLocation, COUNT(SpecificBeanBarName)"
+
+    statement += "FROM Bars "
+
+    # form the statement
+    if "c1.Alpha2" in specification:
+        statement += "JOIN Countries AS c1 ON Bars.CompanyLocationId = c1.Id "
+        statement += "GROUP BY Company "
+        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+    elif "c2.Alpha2" in specification:
+        statement += "JOIN Countries AS c2 ON Bars.BroadBeanOriginId = c2.Id "
+        statement += "GROUP BY Company "
+        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+    elif specification == "Alpha2":
+        statement += "JOIN Countries ON Bars.CompanyLocation = Countries.EnglishName "
+        statement += "GROUP BY Company "
+        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+    else:
+        statement += "GROUP BY Company "
+        statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+
+
+
+    # specifications
+    if specification != "":
+        if "Alpha2" in specification:
+            keyword = keyword.upper()
+        try:
+            statement += "AND {} = '{}' ".format(specification , keyword)
+        except:
+            print("Failure. Please try again.")
+
+
+
+    # ratings / cocoa
+    if criteria == "ratings":
+        statement += "ORDER BY {} ".format("AVG(Rating)")
+    elif criteria == "cocoa":
+        statement += "ORDER BY {} ".format("AVG(CocoaPercent)")
+    elif criteria == "bars_sold":
+        statement += "ORDER BY {} ".format("COUNT(SpecificBeanBarName)")
+
+    # top: DESC / bottom ASC
+    if sorting_order == "top":
+        statement += "{} ".format("DESC")
+    elif sorting_order == "bottom":
+        statement += "{} ".format("ASC")
+
+    # limit
+    statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
+    print(statement)
+
+    # excute the statement
+    results = []
+    rows = cur.execute(statement).fetchall()
+    for row in rows:
+        results.append(row)
+    conn.commit()
+
+    return results
+
+
+
+# --- countries ---
+def countries_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -242,21 +324,10 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
         statement += "{} ".format("ASC")
 
     # excute the statement
+    result_lst = []
     rows = cur.execute(statement)
     for row in rows:
-        print(row)
-    conn.commit()
-
-# --- countries ---
-def countries_query(arg):
-    # connect db
-    conn = sqlite3.connect(DBNAME)
-    cur = conn.cursor()
-
-    # excute the statement
-    results = cur.execute(statement).fetchall()
-    conn.commit()
-
+        result_lst.append(row)
     pass
 
 # --- regions ---
@@ -265,11 +336,100 @@ def regions_query(arg):
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
+
+    # ratings / cocoa
+    if criteria == "ratings":
+        statement += "ORDER BY {} ".format("Rating")
+    elif criteria == "cocoa":
+        statement += "ORDER BY {} ".format("CocoaPercent")
+    elif criteria == "bars_sold":
+        statement += "ORDER BY {} ".format("COUNT(SpecificBeanBarName)")
+
+    # top: DESC / bottom ASC
+    if sorting_order == "top":
+        statement += "{} ".format("DESC")
+    elif sorting_order == "bottom":
+        statement += "{} ".format("ASC")
+
     # excute the statement
-    results = cur.execute(statement).fetchall()
-    conn.commit()
+    rows = cur.execute(statement)
+    for row in rows:
+        print(row)
     pass
 
+# Part 2: Implement logic to process user commands
+def process_command(command):
+
+    command_lst = command.lower().split()
+
+    # def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
+    command_dic = {
+        "specification": "",
+        "keyword": "",
+        "criteria": "ratings",
+        "sorting_order": "top",
+        "limit": 0
+    }
+
+    # lists for checing the commend
+    query_type_lst = ["bars", "companies", "countries", "regions"]
+    sorting_criteria_lst = ["cocoa", "ratings", "bars_sold"]
+    sorting_order_lst = ["top", "bottom"]
+    specification_lst = ["sellcountry", "sourcecountry", "sellregion", "sourceregion", "country", "region"]
+
+    # check user's command line
+    for command in command_lst:
+        # query type
+        if command in query_type_lst:
+            command_dic["query_type"] = command
+        # sorting criteria
+        elif command in sorting_criteria_lst:
+            command_dic["criteria"] = command
+        # number of matches & specifications
+        elif "=" in command:
+            lst = command.split("=")
+            for ele in lst:
+                # top/bottom & limit
+                if ele in sorting_order_lst:
+                    command_dic["sorting_order"] = lst[0]
+                    command_dic["limit"] = lst[1]
+                # specifications
+                elif ele in specification_lst:
+                    if lst[0] == "sellcountry":
+                        command_dic["specification"] = "c1.Alpha2"
+                    elif lst[0] == "sourcecountry":
+                        command_dic["specification"] = "c2.Alpha2"
+                    elif lst[0] == "sellregion":
+                        command_dic["specification"] = "c1.Region"
+                    elif lst[0] == "sourceregion":
+                        command_dic["specification"] = "c2.Region"
+                    elif lst[0] == "country":
+                        command_dic["specification"] = "Alpha2"
+                    else:
+                        command_dic["specification"] = lst[0].title()
+                    command_dic["keyword"] = lst[1].title()
+
+    # execute bars_query
+    results = []
+
+    if command_dic["query_type"] == "bars":
+        results = bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+    elif command_dic["query_type"] == "companies":
+        results = companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+
+    return results
+
+
+
+
+# 88
+result_88 = process_command('bars sourceregion=Africa ratings top=5')
+print("result 88:", result_88)
+
+
+def load_help_text():
+    with open('help.txt') as f:
+        return f.read()
 
 def interactive_prompt():
     help_text = load_help_text()
@@ -279,64 +439,6 @@ def interactive_prompt():
 
         if response == 'help':
             print(help_text)
-            continue
-
-        command_lst = response.lower().split()
-
-        # def bars_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
-        command_dic = {
-            "specification": "",
-            "keyword": "",
-            "criteria": "ratings",
-            "sorting_order": "top",
-            "limit": 0
-        }
-
-        # lists for checing the commend
-        query_type_lst = ["bars", "companies", "countries", "regions"]
-        sorting_criteria_lst = ["cocoa", "ratings", "bars_sold"]
-        sorting_order_lst = ["top", "bottom"]
-        specification_lst = ["sellcountry", "sourcecountry", "sellregion", "country", "region"]
-
-        # check user's command line
-        for command in command_lst:
-            # query type
-            if command in query_type_lst:
-                command_dic["query_type"] = command
-            # sorting criteria
-            elif command in sorting_criteria_lst:
-                command_dic["criteria"] = command
-            # number of matches & specifications
-            elif "=" in command:
-                lst = command.split("=")
-                for ele in lst:
-                    # top/bottom & limit
-                    if ele in sorting_order_lst:
-                        command_dic["sorting_order"] = lst[0]
-                        command_dic["limit"] = lst[1]
-                    # specifications
-                    elif ele in specification_lst:
-                        if lst[0] == "sellcountry":
-                            command_dic["specification"] = "Alpha2"
-                        elif lst[0] == "sourcecountry":
-                            command_dic["specification"] = "Alpha2"
-                        elif lst[0] == "sellregion":
-                            command_dic["specification"] = "Region"
-                        else:
-                            command_dic["specification"] = lst[0].title()
-                        command_dic["keyword"] = lst[1]
-            else:
-                continue
-
-        print(command_dic)
-        # execute bars_query
-        try:
-            if command_dic["query_type"] == "bars":
-                bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
-                # print(bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])[0][0])
-            elif command_dic["query_type"] == "companies":
-                companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
-        except:
             continue
 
 # Make sure nothing runs or prints out when this file is run as a module
