@@ -275,7 +275,7 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     return results
 
 # --- countries ---
-def countries_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10"):
+def countries_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10", sellers_or_sources="seller"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -293,9 +293,9 @@ def countries_query(specification="", keyword="", criteria="ratings", sorting_or
     statement += "FROM Countries "
 
     # form the statement
-    if specification == "CompanyLocation" or specification == "":
+    if sellers_or_sources == "sellers" or specification == "":
         statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
-    elif specification == "BroadBeanOrigin":
+    elif sellers_or_sources == "sources":
         statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
 
     statement += "GROUP BY EnglishName "
@@ -413,7 +413,8 @@ def process_command(command):
         "keyword":"",
         "criteria":"ratings",
         "sorting_order":"top",
-        "limit":"10"
+        "limit":"10",
+        "sellers_or_sources":"sellers"
     }
 
     # lists for checing the commend
@@ -450,19 +451,15 @@ def process_command(command):
                         command_dic["specification"] = "c2.Region"
                     elif lst[0] == "country":
                         command_dic["specification"] = "Alpha2"
-                    elif lst[0] == "sellers":
-                        command_dic["specification"] = "CompanyLocation"
-                    elif lst[0] == "sources":
-                        command_dic["specification"] = "BroadBeanOrigin"
                     else:
                         command_dic["specification"] = lst[0].title()
                     command_dic["keyword"] = lst[1].title()
         elif command == "sellers":
-            command_dic["specification"] = "CompanyLocation"
+            command_dic["sellers_or_sources"] = "CompanyLocation"
         elif command == "sources":
-            command_dic["specification"] = "BroadBeanOrigin"
+            command_dic["sellers_or_sources"] = "BroadBeanOrigin"
 
-    # print(command_dic)
+    print(command_dic)
     results = []
 
     if command_dic["query_type"] == "bars":
@@ -482,19 +479,21 @@ def process_command(command):
 
         # output
         # 'Company', 'CompanyLocation', <agg> (i.e., average rating or cocoa percent, or number of bars sold)
-        template = "{0:25} {1:25} {2:25}"
+        template = "{0:20} {1:20} {2:20}"
         for row in results:
-            print(template.format(*row))
+            (c, cl, agg) = row
+            print(template.format(str_output(c), str_output(cl), agg))
 
     elif command_dic["query_type"] == "countries":
         # execute countries_query
-        results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+        results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"], command_dic["sellers_or_sources"])
 
         # output
         # 'Country', 'Region', <agg> (i.e., average rating or cocoa percent, or number of bars sold)
-        template = "{0:25} {1:25} {2:25}"
+        template = "{0:20} {1:20} {2:20}"
         for row in results:
-            print(template.format(*row))
+            (c, r, agg) = row
+            print(template.format(str_output(c), str_output(r), agg))
 
     elif command_dic["query_type"] == "regions":
         # execute regions_query
@@ -502,9 +501,10 @@ def process_command(command):
 
         # output
         # 'Region', <agg> (i.e., average rating or cocoa percent, or number of bars sold)
-        template = "{0:25} {1:25}"
+        template = "{0:15} {1:15}"
         for row in results:
-            print(template.format(*row))
+            (r, agg) = row
+            print(template.format(str_output(r), agg))
 
 def load_help_text():
     with open('help.txt') as f:
