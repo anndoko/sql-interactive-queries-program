@@ -219,14 +219,12 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     cur = conn.cursor()
 
     # form the statement
-
-    # ratings / cocoa
     if criteria == "ratings":
         statement = "SELECT Company, CompanyLocation, AVG(Rating) "
     elif criteria == "cocoa":
-        statement = "SELECT Company, CompanyLocation, AVG(CocoaPercent), COUNT(SpecificBeanBarName) "
+        statement = "SELECT Company, CompanyLocation, AVG(CocoaPercent) "
     elif criteria == "bars_sold":
-        statement = "SELECT Company, CompanyLocation, COUNT(SpecificBeanBarName)"
+        statement = "SELECT Company, CompanyLocation, COUNT(SpecificBeanBarName) "
 
     statement += "FROM Bars "
 
@@ -247,8 +245,6 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
         statement += "GROUP BY Company "
         statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
 
-
-
     # specifications
     if specification != "":
         if "Alpha2" in specification:
@@ -257,8 +253,6 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
             statement += "AND {} = '{}' ".format(specification , keyword)
         except:
             print("Failure. Please try again.")
-
-
 
     # ratings / cocoa
     if criteria == "ratings":
@@ -288,32 +282,36 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     return results
 
 
-
 # --- countries ---
-def countries_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit=10):
+def countries_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit=10):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
     # form the statement
-    statement = "SELECT Company, CompanyLocation, AVG(Rating), AVG(CocoaPercent), COUNT(SpecificBeanBarName), Alpha2 "
-    statement += "FROM Bars "
-    statement += "JOIN Countries ON Bars.CompanyLocationId = Countries.Id "
-    statement += "GROUP BY Company "
-    statement += "HAVING COUNT(SpecificBeanBarName) >= 4 "
+    if criteria == "ratings":
+        statement = "SELECT EnglishName, Region, AVG(Rating) "
+    elif criteria == "cocoa":
+        statement = "SELECT EnglishName, Region, AVG(CocoaPercent) "
+    elif criteria == "bars_sold":
+        statement = "SELECT EnglishName, Region, COUNT(SpecificBeanBarName) "
 
-    # specifications
-    if specification != "":
-        try:
-            statement += "AND {} = '{}' ".format(specification , keyword.upper())
-        except:
-            print("Failure. Please try again.")
+    statement += "FROM Countries "
+
+    # form the statement
+    if specification == "CompanyLocation":
+        statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
+    elif specification == "BroadBeanOrigin":
+        statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
+
+    statement += "GROUP BY EnglishName "
+    statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
 
     # ratings / cocoa
     if criteria == "ratings":
-        statement += "ORDER BY {} ".format("Rating")
+        statement += "ORDER BY {} ".format("AVG(Rating)")
     elif criteria == "cocoa":
-        statement += "ORDER BY {} ".format("CocoaPercent")
+        statement += "ORDER BY {} ".format("AVG(CocoaPercent)")
     elif criteria == "bars_sold":
         statement += "ORDER BY {} ".format("COUNT(SpecificBeanBarName)")
 
@@ -323,19 +321,24 @@ def countries_query(specification="", keyword="", criteria="ratings", sorting_or
     elif sorting_order == "bottom":
         statement += "{} ".format("ASC")
 
+    # limit
+    statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
+    print("statement:", statement)
+
     # excute the statement
-    result_lst = []
-    rows = cur.execute(statement)
+    results = []
+    rows = cur.execute(statement).fetchall()
     for row in rows:
-        result_lst.append(row)
-    pass
+        results.append(row)
+    conn.commit()
+
+    return results
 
 # --- regions ---
 def regions_query(arg):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
-
 
     # ratings / cocoa
     if criteria == "ratings":
@@ -375,7 +378,7 @@ def process_command(command):
     query_type_lst = ["bars", "companies", "countries", "regions"]
     sorting_criteria_lst = ["cocoa", "ratings", "bars_sold"]
     sorting_order_lst = ["top", "bottom"]
-    specification_lst = ["sellcountry", "sourcecountry", "sellregion", "sourceregion", "country", "region"]
+    specification_lst = ["sellcountry", "sourcecountry", "sellregion", "sourceregion", "country", "region", "sellers", "sources"]
 
     # check user's command line
     for command in command_lst:
@@ -405,9 +408,17 @@ def process_command(command):
                         command_dic["specification"] = "c2.Region"
                     elif lst[0] == "country":
                         command_dic["specification"] = "Alpha2"
+                    elif lst[0] == "sellers":
+                        command_dic["specification"] = "CompanyLocation"
+                    elif lst[0] == "sources":
+                        command_dic["specification"] = "BroadBeanOrigin"
                     else:
                         command_dic["specification"] = lst[0].title()
                     command_dic["keyword"] = lst[1].title()
+        elif command == "sellers":
+            command_dic["specification"] = "CompanyLocation"
+        elif command == "sources":
+            command_dic["specification"] = "BroadBeanOrigin"
 
     # execute bars_query
     results = []
@@ -416,15 +427,20 @@ def process_command(command):
         results = bars_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
     elif command_dic["query_type"] == "companies":
         results = companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+    elif command_dic["query_type"] == "countries":
+        results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+    elif command_dic["query_type"] == "countries":
+        results = region_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+
 
     return results
 
 
 
-
-# 95
-result_95 = process_command('companies cocoa top=5')
-print("result 95:", result_95[0][0])
+# results = process_command('regions sources bars_sold top=5')
+# self.assertEqual(results[0][0], 'Americas')
+result_120 = process_command('regions sources bars_sold top=5')
+print("result 120:", result_120)
 
 
 def load_help_text():
@@ -447,5 +463,4 @@ if __name__=="__main__":
     read_csv_file_and_insert_data(BARSCSV)
     read_json_file_and_insert_data(COUNTRIESJSON)
     update_tables()
-
     interactive_prompt()
