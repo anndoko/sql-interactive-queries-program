@@ -164,7 +164,6 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
-
     # form the statement
     if "c1" in specification:
         statement = "SELECT SpecificBeanBarName, Company, CompanyLocation, Rating, CocoaPercent, BroadBeanOrigin, c1.Alpha2 "
@@ -281,7 +280,6 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
 
     return results
 
-
 # --- countries ---
 def countries_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit=10):
     # connect db
@@ -335,16 +333,36 @@ def countries_query(specification="CompanyLocation", keyword="", criteria="ratin
     return results
 
 # --- regions ---
-def regions_query(arg):
+def regions_query(specification="CompanyLocation", keyword="", criteria="ratings", sorting_order="top", limit=10):
+    print("test")
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
 
+    # form the statement
+    if criteria == "ratings":
+        statement = "SELECT Region, AVG(Rating) "
+    elif criteria == "cocoa":
+        statement = "SELECT Region, AVG(CocoaPercent) "
+    elif criteria == "bars_sold":
+        statement = "SELECT Region, COUNT(SpecificBeanBarName) "
+
+    statement += "FROM Countries "
+
+    # form the statement
+    if specification == "CompanyLocation":
+        statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
+    elif specification == "BroadBeanOrigin":
+        statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
+
+    statement += "GROUP BY Region "
+    statement += "HAVING COUNT(SpecificBeanBarName) > 4 "
+
     # ratings / cocoa
     if criteria == "ratings":
-        statement += "ORDER BY {} ".format("Rating")
+        statement += "ORDER BY {} ".format("AVG(Rating)")
     elif criteria == "cocoa":
-        statement += "ORDER BY {} ".format("CocoaPercent")
+        statement += "ORDER BY {} ".format("AVG(CocoaPercent)")
     elif criteria == "bars_sold":
         statement += "ORDER BY {} ".format("COUNT(SpecificBeanBarName)")
 
@@ -355,10 +373,14 @@ def regions_query(arg):
         statement += "{} ".format("ASC")
 
     # excute the statement
-    rows = cur.execute(statement)
+    print(statement)
+    results = []
+    rows = cur.execute(statement).fetchall()
     for row in rows:
-        print(row)
-    pass
+        results.append(row)
+    conn.commit()
+
+    return results
 
 # Part 2: Implement logic to process user commands
 def process_command(command):
@@ -429,19 +451,10 @@ def process_command(command):
         results = companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
     elif command_dic["query_type"] == "countries":
         results = countries_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
-    elif command_dic["query_type"] == "countries":
-        results = region_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
-
+    elif command_dic["query_type"] == "regions":
+        results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
 
     return results
-
-
-
-# results = process_command('regions sources bars_sold top=5')
-# self.assertEqual(results[0][0], 'Americas')
-result_120 = process_command('regions sources bars_sold top=5')
-print("result 120:", result_120)
-
 
 def load_help_text():
     with open('help.txt') as f:
