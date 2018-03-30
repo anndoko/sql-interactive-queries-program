@@ -198,7 +198,7 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
     # excute the statement
-    print(statement)
+    # print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -267,7 +267,7 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
     # excute the statement
-    print(statement)
+    # print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -277,7 +277,7 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     return results
 
 # --- countries ---
-def countries_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10", sellers_or_sources="seller"):
+def countries_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10", sellers_or_sources="sellers"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -295,7 +295,7 @@ def countries_query(specification="", keyword="", criteria="ratings", sorting_or
     statement += "FROM Countries "
 
     # form the statement
-    if sellers_or_sources == "sellers" or specification == "":
+    if sellers_or_sources == "sellers":
         statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
     elif sellers_or_sources == "sources":
         statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
@@ -330,7 +330,7 @@ def countries_query(specification="", keyword="", criteria="ratings", sorting_or
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
     # excute the statement
-    print(statement)
+    # print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -340,7 +340,7 @@ def countries_query(specification="", keyword="", criteria="ratings", sorting_or
     return results
 
 # --- regions ---
-def regions_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10", sellers_or_sources="seller"):
+def regions_query(specification="", keyword="", criteria="ratings", sorting_order="top", limit="10", sellers_or_sources="sellers"):
     # connect db
     conn = sqlite3.connect(DBNAME)
     cur = conn.cursor()
@@ -358,7 +358,7 @@ def regions_query(specification="", keyword="", criteria="ratings", sorting_orde
     statement += "FROM Countries "
 
     # form the statement
-    if sellers_or_sources == "sellers" or specification == "":
+    if sellers_or_sources == "sellers":
         statement += "JOIN Bars ON Countries.Id = Bars.CompanyLocationId "
     elif sellers_or_sources == "sources":
         statement += "JOIN Bars ON Countries.Id = Bars.BroadBeanOriginId "
@@ -385,7 +385,7 @@ def regions_query(specification="", keyword="", criteria="ratings", sorting_orde
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
     # excute the statement
-    print(statement)
+    # print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -523,7 +523,7 @@ def process_command(command):
 
     elif command_dic["query_type"] == "regions" and if_valid == True:
         # execute regions_query
-        results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
+        results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"], command_dic["sellers_or_sources"])
 
         # output
         # 'Region', <agg> (i.e., average rating or cocoa percent, or number of bars sold)
@@ -539,20 +539,6 @@ def process_command(command):
             print(template.format(str_output(r), agg))
 
         return results
-
-print("test")
-resutls_1 = process_command("bars ratings top=1")
-print(type(resutls_1))
-#
-resutls_2 = process_command("companies region=Europe ratings top=5")
-print(type(resutls_1))
-#
-resutls_3 = process_command("countries sources ratings bottom=5")
-print(type(resutls_1))
-#
-resutls_4 = process_command("regions sources bars_sold top=5")
-print(type(resutls_1))
-
 
 def load_help_text():
     with open('help.txt') as f:
