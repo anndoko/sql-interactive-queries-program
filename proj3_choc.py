@@ -442,6 +442,9 @@ def process_command(command):
         # sorting criteria
         elif command in sorting_criteria_lst:
             command_dic["criteria"] = command
+        # for countries and regions: sellers / sources
+        elif command in sellers_or_sources_lst:
+            command_dic["sellers_or_sources"] = command
         # number of matches & specifications
         elif "=" in command:
             lst = command.split("=")
@@ -465,8 +468,12 @@ def process_command(command):
                     else:
                         command_dic["specification"] = lst[0].title()
                     command_dic["keyword"] = lst[1].title()
-        elif command in sellers_or_sources_lst:
-            command_dic["sellers_or_sources"] = command
+        else:
+            if_valid = False
+
+    if if_valid == False:
+        print("Command not recognized: ", command)
+
 
     results = []
 
