@@ -198,6 +198,7 @@ def bars_query(specification="", keyword="", criteria="ratings", sorting_order="
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
     # excute the statement
+    print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -266,6 +267,7 @@ def companies_query(specification="", keyword="", criteria="ratings", sorting_or
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
     # excute the statement
+    print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -327,8 +329,8 @@ def countries_query(specification="", keyword="", criteria="ratings", sorting_or
     # limit
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
-    print(statement)
     # excute the statement
+    print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -383,6 +385,7 @@ def regions_query(specification="", keyword="", criteria="ratings", sorting_orde
     statement += "LIMIT {}".format(limit) #list the top <limit> matches or the bottom <limit> matches.
 
     # excute the statement
+    print(statement)
     results = []
     rows = cur.execute(statement).fetchall()
     for row in rows:
@@ -478,6 +481,8 @@ def process_command(command):
             (sbbn, c, cl, r, cp, bbo) = row
             print(template.format(str_output(sbbn), str_output(c), str_output(cl), digits_output(r), percent_output(cp), str_output(bbo)))
 
+        return results
+
     elif command_dic["query_type"] == "companies" and if_valid == True:
         # execute companies_query
         results = companies_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
@@ -494,6 +499,8 @@ def process_command(command):
                 agg = percent_output(agg)
 
             print(template.format(str_output(c), str_output(cl), agg))
+
+        return results
 
     elif command_dic["query_type"] == "countries" and if_valid == True:
         # execute countries_query
@@ -512,6 +519,8 @@ def process_command(command):
 
             print(template.format(str_output(c), str_output(r), agg))
 
+        return results
+
     elif command_dic["query_type"] == "regions" and if_valid == True:
         # execute regions_query
         results = regions_query(command_dic["specification"], command_dic["keyword"], command_dic["criteria"], command_dic["sorting_order"], command_dic["limit"])
@@ -528,6 +537,22 @@ def process_command(command):
                 agg = percent_output(agg)
 
             print(template.format(str_output(r), agg))
+
+        return results
+
+print("test")
+resutls_1 = process_command("bars ratings top=1")
+print(type(resutls_1))
+#
+resutls_2 = process_command("companies region=Europe ratings top=5")
+print(type(resutls_1))
+#
+resutls_3 = process_command("countries sources ratings bottom=5")
+print(type(resutls_1))
+#
+resutls_4 = process_command("regions sources bars_sold top=5")
+print(type(resutls_1))
+
 
 def load_help_text():
     with open('help.txt') as f:
